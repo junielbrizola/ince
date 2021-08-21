@@ -1,0 +1,20 @@
+version: '3'
+
+services:
+
+    ince-app:
+        build: 
+            context: .
+            dockerfile: Dockerfile
+        container_name: ince-app
+        volumes: 
+            - .:/usr/src/app
+        tty: true
+        restart: always
+        ports:
+            - "7000:7000"
+        expose: 
+            - "7000"
+        extra_hosts:
+            - "host.docker.internal:172.17.0.1"
+
