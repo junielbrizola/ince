@@ -1,0 +1,85 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  namespace: authentication
+  labels:
+    app: keycloak
+spec:
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+  selector:
+    app: keycloak
+  type: ClusterIP
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  namespace: authentication
+  labels:
+    app: keycloak
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      imagePullSecrets:
+      - name: cgdockerhub
+      containers:
+      - name: keycloak
+        image: cgcontadores/authentication-keycloak:v1
+        imagePullPolicy: Always
+        env:
+        - name: KEYCLOAK_USER
+          value: "admin"
+        - name: KEYCLOAK_PASSWORD
+          value: "admin"
+        - name: PROXY_ADDRESS_FORWARDING
+          value: "true"
+        - name: DB_VENDOR
+          value: POSTGRES
+        - name: DB_ADDR
+          value: postgres
+        - name: DB_DATABASE
+          value: keycloak
+        - name: DB_USER
+          value: root
+        - name: DB_PASSWORD
+          value: password
+        - name : KEYCLOAK_HTTP_PORT
+          value : "80"
+        - name: KEYCLOAK_HTTPS_PORT
+          value: "443"
+        - name : KEYCLOAK_HOSTNAME
+          value : af48fa1682ec246d890ce7eef141d80b-bafa0322eca1d47a.elb.sa-east-1.amazonaws.com #replace with ingress URL
+        - name : KK_TO_RMQ_URL
+          value: "rabbitmq-0.rabbitmq.messaging.svc.cluster.local"
+        - name: KK_TO_RMQ_PORT
+          value: "7300"
+        - name : KK_TO_RMQ_VHOST
+          value: /
+        - name: KK_TO_RMQ_EXCHANGE
+          value: authentication
+        - name: KK_TO_RMQ_USERNAME
+          value: guest
+        - name: KK_TO_RMQ_PASSWORD
+          value: guest
+        ports:
+        - name: http
+          containerPort: 8080
+        - name: https
+          containerPort: 8443
+        readinessProbe:
+          httpGet:
+            path: /auth/realms/master
+            port: 8080
